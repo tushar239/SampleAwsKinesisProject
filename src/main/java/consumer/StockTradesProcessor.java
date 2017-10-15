@@ -55,6 +55,9 @@ public class StockTradesProcessor {
     public static void main(String[] args) throws Exception {
         //checkUsage(args);
 
+        // https://aws.amazon.com/kinesis/streams/faqs/
+        // (IMP) All workers associated with the same application name are assumed to be working together on the same Amazon Kinesis stream.
+        // If you run an additional instance of the same application code, but with a different application name, KCL treats the second instance as an entirely separate application also operating on the same stream.
         String applicationName = "MyKinesisStreamConsumer";
         String streamName = "MyKinesisStream";
         String regionName = "us-west-2";

@@ -4,187 +4,187 @@ This example project is created from
 
 Create a Stream using AWS Console
 ---------------------------------
-Read CreateAStream.docx
+    Read CreateAStream.docx
 
 IAM Policy
 ----------
-http://docs.aws.amazon.com/streams/latest/dev/learning-kinesis-module-one-create-stream.html
-
-If you are going to run your producer and consumer code from EC2 instances, then you need to give those EC2 instances proper Roles. Producer should be able to access Kinesis Stream and consumer should be able to write data to dynamodb and access cloudwatch to put metric data.
-For this example, we need a user with access key that has both producer and consumer kind of permissions because we are not going use EC2 for this example.
-
-You need an access key with min following policy.
-{
-  "Version": "2012-10-17",
-  "Statement": [
+    http://docs.aws.amazon.com/streams/latest/dev/learning-kinesis-module-one-create-stream.html
+    
+    If you are going to run your producer and consumer code from EC2 instances, then you need to give those EC2 instances proper Roles. Producer should be able to access Kinesis Stream and consumer should be able to write data to dynamodb and access cloudwatch to put metric data.
+    For this example, we need a user with access key that has both producer and consumer kind of permissions because we are not going use EC2 for this example.
+    
+    You need an access key with min following policy.
     {
-      "Sid": "Stmt123",
-      "Effect": "Allow",
-      "Action": [
-        "kinesis:DescribeStream",
-        "kinesis:PutRecord",
-        "kinesis:PutRecords",
-        "kinesis:GetShardIterator",
-        "kinesis:GetRecords"
-      ],
-      "Resource": [
-        "arn:aws:kinesis:us-west-2:123:stream/StockTradeStream"
-      ]
-    },
-    {
-      "Sid": "Stmt456",
-      "Effect": "Allow",
-      "Action": [
-        "dynamodb:*"
-      ],
-      "Resource": [
-        "arn:aws:dynamodb:us-west-2:123:table/StockTradesProcessor"
-      ]
-    },
-    {
-      "Sid": "Stmt789",
-      "Effect": "Allow",
-      "Action": [
-        "cloudwatch:PutMetricData"
-      ],
-      "Resource": [
-        "*"
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "Stmt123",
+          "Effect": "Allow",
+          "Action": [
+            "kinesis:DescribeStream",
+            "kinesis:PutRecord",
+            "kinesis:PutRecords",
+            "kinesis:GetShardIterator",
+            "kinesis:GetRecords"
+          ],
+          "Resource": [
+            "arn:aws:kinesis:us-west-2:123:stream/StockTradeStream"
+          ]
+        },
+        {
+          "Sid": "Stmt456",
+          "Effect": "Allow",
+          "Action": [
+            "dynamodb:*"
+          ],
+          "Resource": [
+            "arn:aws:dynamodb:us-west-2:123:table/StockTradesProcessor"
+          ]
+        },
+        {
+          "Sid": "Stmt789",
+          "Effect": "Allow",
+          "Action": [
+            "cloudwatch:PutMetricData"
+          ],
+          "Resource": [
+            "*"
+          ]
+        }
       ]
     }
-  ]
-}
 
 
 There are many ways to put records in Kinesis Stream
 ----------------------------------------------------
-- PutRecord API
-- PutRecords API
-- KPL (Kinesis Producer Library)
-- Kinesis Agent
+    - PutRecord API
+    - PutRecords API
+    - KPL (Kinesis Producer Library)
+    - Kinesis Agent
 
     Using PutRecord API
     -------------------
-    This example is using it. It is putting records one by one in the stream.
+        This example is using it. It is putting records one by one in the stream.
 
     Using PutRecords API (Bulk PutRecords)
     --------------------------------------
 
-    http://docs.aws.amazon.com/streams/latest/dev/developing-producers-with-sdk.html#kinesis-using-sdk-java-putrecords
-
-    PutRecordsRequest putRecordsRequest  = new PutRecordsRequest();
-    putRecordsRequest.setStreamName(streamName);
-    List<PutRecordsRequestEntry> putRecordsRequestEntryList  = new ArrayList<>();
-    for (int i = 0; i < 100; i++) {
-        PutRecordsRequestEntry putRecordsRequestEntry  = new PutRecordsRequestEntry();
-        putRecordsRequestEntry.setData(ByteBuffer.wrap(String.valueOf(i).getBytes()));
-        putRecordsRequestEntry.setPartitionKey(String.format("partitionKey-%d", i));
-        putRecordsRequestEntryList.add(putRecordsRequestEntry);
-    }
-
-    putRecordsRequest.setRecords(putRecordsRequestEntryList);
-    PutRecordsResult putRecordsResult  = kinesisClient.putRecords(putRecordsRequest);
-    System.out.println("Put Result" + putRecordsResult);
-
-    Handing Failures
-
-        Records that were unsuccessfully processed can be included in subsequent PutRecords requests.
-        First, check the FailedRecordCount parameter in the putRecordsResult to confirm if there are failed records in the request.
-        If so, each putRecordsEntry that has an ErrorCode that is not null should be added to a subsequent request. For an example of this type of handler, refer to the following code.
-
-        {
-            "FailedRecordCount”: 1,
-            "Records": [
-                {
-                    "SequenceNumber": "21269319989900637946712965403778482371",
-                    "ShardId": "shardId-000000000001"
-
-                },
-                {
-                    “ErrorCode":”ProvisionedThroughputExceededException”,
-                    “ErrorMessage": "Rate exceeded for shard shardId-000000000001 in stream exampleStreamName under account 111111111111."
-
-                },
-                {
-                    "SequenceNumber": "21269319989999637946712965403778482985",
-                    "ShardId": "shardId-000000000002"
-                }
-            ]
+        http://docs.aws.amazon.com/streams/latest/dev/developing-producers-with-sdk.html#kinesis-using-sdk-java-putrecords
+    
+        PutRecordsRequest putRecordsRequest  = new PutRecordsRequest();
+        putRecordsRequest.setStreamName(streamName);
+        List<PutRecordsRequestEntry> putRecordsRequestEntryList  = new ArrayList<>();
+        for (int i = 0; i < 100; i++) {
+            PutRecordsRequestEntry putRecordsRequestEntry  = new PutRecordsRequestEntry();
+            putRecordsRequestEntry.setData(ByteBuffer.wrap(String.valueOf(i).getBytes()));
+            putRecordsRequestEntry.setPartitionKey(String.format("partitionKey-%d", i));
+            putRecordsRequestEntryList.add(putRecordsRequestEntry);
         }
-        
-    while (putRecordsResult.getFailedRecordCount() > 0) {
-        final List<PutRecordsRequestEntry> failedRecordsList = new ArrayList<>();
-        final List<PutRecordsResultEntry> putRecordsResultEntryList = putRecordsResult.getRecords();
-        for (int i = 0; i < putRecordsResultEntryList.size(); i++) {
-            final PutRecordsRequestEntry putRecordRequestEntry = putRecordsRequestEntryList.get(i);
-            final PutRecordsResultEntry putRecordsResultEntry = putRecordsResultEntryList.get(i);
-            if (putRecordsResultEntry.getErrorCode() != null) {
-                failedRecordsList.add(putRecordRequestEntry);
-            }
-        }
-        putRecordsRequestEntryList = failedRecordsList;
+    
         putRecordsRequest.setRecords(putRecordsRequestEntryList);
-        putRecordsResult = amazonKinesisClient.putRecords(putRecordsRequest);
-    }
-
-    If you exceed number of records to be sent in one request, you get ‘ProvisionedThroughputExccededException’.
-    In this case, you need to batch these failed records in the next request. Retrying looks like a big pain. Use KPL (Kinesis Producer Library) to retry automatically instead of using lower level of PutRecords API.
-    KPL uses PutRecords API internally.
+        PutRecordsResult putRecordsResult  = kinesisClient.putRecords(putRecordsRequest);
+        System.out.println("Put Result" + putRecordsResult);
+    
+        Handing Failures
+    
+            Records that were unsuccessfully processed can be included in subsequent PutRecords requests.
+            First, check the FailedRecordCount parameter in the putRecordsResult to confirm if there are failed records in the request.
+            If so, each putRecordsEntry that has an ErrorCode that is not null should be added to a subsequent request. For an example of this type of handler, refer to the following code.
+    
+            {
+                "FailedRecordCount”: 1,
+                "Records": [
+                    {
+                        "SequenceNumber": "21269319989900637946712965403778482371",
+                        "ShardId": "shardId-000000000001"
+    
+                    },
+                    {
+                        “ErrorCode":”ProvisionedThroughputExceededException”,
+                        “ErrorMessage": "Rate exceeded for shard shardId-000000000001 in stream exampleStreamName under account 111111111111."
+    
+                    },
+                    {
+                        "SequenceNumber": "21269319989999637946712965403778482985",
+                        "ShardId": "shardId-000000000002"
+                    }
+                ]
+            }
+            
+        while (putRecordsResult.getFailedRecordCount() > 0) {
+            final List<PutRecordsRequestEntry> failedRecordsList = new ArrayList<>();
+            final List<PutRecordsResultEntry> putRecordsResultEntryList = putRecordsResult.getRecords();
+            for (int i = 0; i < putRecordsResultEntryList.size(); i++) {
+                final PutRecordsRequestEntry putRecordRequestEntry = putRecordsRequestEntryList.get(i);
+                final PutRecordsResultEntry putRecordsResultEntry = putRecordsResultEntryList.get(i);
+                if (putRecordsResultEntry.getErrorCode() != null) {
+                    failedRecordsList.add(putRecordRequestEntry);
+                }
+            }
+            putRecordsRequestEntryList = failedRecordsList;
+            putRecordsRequest.setRecords(putRecordsRequestEntryList);
+            putRecordsResult = amazonKinesisClient.putRecords(putRecordsRequest);
+        }
+    
+        If you exceed number of records to be sent in one request, you get ‘ProvisionedThroughputExccededException’.
+        In this case, you need to batch these failed records in the next request. Retrying looks like a big pain. Use KPL (Kinesis Producer Library) to retry automatically instead of using lower level of PutRecords API.
+        KPL uses PutRecords API internally.
 
     Writing to Amazon Kinesis Streams Using Kinesis Agent
     -----------------------------------------------------
 
-    http://docs.aws.amazon.com/streams/latest/dev/writing-with-agents.html
-
-    Kinesis Agent is a stand-alone Java software application that offers an easy way to collect and send data to Kinesis Streams.
-    The agent continuously monitors a set of files and sends new data to your stream. The agent handles file rotation, checkpointing, and retry upon failures. It delivers all of your data in a reliable, timely, and simple manner.
-    It also emits Amazon CloudWatch metrics to help you better monitor and troubleshoot the streaming process.
+        http://docs.aws.amazon.com/streams/latest/dev/writing-with-agents.html
+    
+        Kinesis Agent is a stand-alone Java software application that offers an easy way to collect and send data to Kinesis Streams.
+        The agent continuously monitors a set of files and sends new data to your stream. The agent handles file rotation, checkpointing, and retry upon failures. It delivers all of your data in a reliable, timely, and simple manner.
+        It also emits Amazon CloudWatch metrics to help you better monitor and troubleshoot the streaming process.
 
     Using KPL (Kinesis Producer Library)
     ------------------------------------
 
-    http://docs.aws.amazon.com/streams/latest/dev/kinesis-kpl-writing.html
-
-    http://docs.aws.amazon.com/streams/latest/dev/developing-producers-with-kpl.html
-
-    Note that the KPL is different from the Kinesis Streams API that is available in the AWS SDKs. The Kinesis Streams API helps you manage many aspects of Kinesis Streams (including creating streams, resharding, and putting and getting records), while the KPL provides a layer of abstraction specifically for ingesting data.
-    The KPL is an easy-to-use, highly configurable library that helps you write to a Kinesis stream. It acts as an intermediary between your producer application code and the Kinesis Streams API actions. The KPL performs the following primary tasks:
-
-    - Writes to one or more Kinesis streams with an automatic and configurable retry mechanism
-    - Collects records and uses PutRecords to write multiple records to multiple shards per request
-    - (IMP) Aggregates user records to increase payload size and improve throughput
-    - Integrates seamlessly with the Kinesis Client Library (KCL) to de-aggregate batched records on the consumer
-    - Submits Amazon CloudWatch metrics on your behalf to provide visibility into producer performance
-
-    Performance Benefits
-        The KPL can help build high-performance producers. Consider a situation where your Amazon EC2 instances serve as a proxy for collecting 100-byte events from hundreds or thousands of low power devices and writing records into an Kinesis stream. These EC2 instances must each write thousands of events per second to your Kinesis stream. To achieve the throughput needed, producers must implement complicated logic such as batching or multithreading, in addition to retry logic and record de-aggregation at the consumer side. The KPL performs all of these tasks for you.
-
-    Consumer-side Ease of Use
-        For consumer-side developers using the KCL in Java, the KPL integrates without additional effort. When the KCL retrieves an aggregated Kinesis Streams record consisting of multiple KPL user records, it automatically invokes the KPL to extract the individual user records before returning them to the user.
-        For consumer-side developers who do not use the KCL but instead use the API operation GetRecords directly, a KPL Java library is available to extract the individual user records before returning them to the user.
-
-    Producer Monitoring
-        You can collect, monitor, and analyze your Kinesis Streams producers using Amazon CloudWatch and the KPL. The KPL emits throughput, error, and other metrics to CloudWatch on your behalf, and is configurable to monitor at the stream, shard, or producer level.
-
-    Asynchronous Architecture
-        Because the KPL may buffer records before sending them to Kinesis Streams, it does not force the caller application to block and wait for a confirmation that the record has arrived at the server before continuing execution.
-        A call to put a record into the KPL always returns immediately and does not wait for the record to be sent or a response to be received from the server. Instead, a Future object is created that receives the result of sending the record to Kinesis Streams at a later time.
-        This is the same behavior as asynchronous clients in the AWS SDK.
-
-    When Not To Use the KPL?
-        The KPL can incur an additional processing delay of up to RecordMaxBufferedTime within the library (user-configurable). Larger values of RecordMaxBufferedTime results in higher packing efficiencies and better performance. Applications that cannot tolerate this additional delay may need to use the AWS SDK directly.
+        http://docs.aws.amazon.com/streams/latest/dev/kinesis-kpl-writing.html
+    
+        http://docs.aws.amazon.com/streams/latest/dev/developing-producers-with-kpl.html
+    
+        Note that the KPL is different from the Kinesis Streams API that is available in the AWS SDKs. The Kinesis Streams API helps you manage many aspects of Kinesis Streams (including creating streams, resharding, and putting and getting records), while the KPL provides a layer of abstraction specifically for ingesting data.
+        The KPL is an easy-to-use, highly configurable library that helps you write to a Kinesis stream. It acts as an intermediary between your producer application code and the Kinesis Streams API actions. The KPL performs the following primary tasks:
+    
+        - Writes to one or more Kinesis streams with an automatic and configurable retry mechanism
+        - Collects records and uses PutRecords to write multiple records to multiple shards per request
+        - (IMP) Aggregates user records to increase payload size and improve throughput
+        - Integrates seamlessly with the Kinesis Client Library (KCL) to de-aggregate batched records on the consumer
+        - Submits Amazon CloudWatch metrics on your behalf to provide visibility into producer performance
+    
+        Performance Benefits
+            The KPL can help build high-performance producers. Consider a situation where your Amazon EC2 instances serve as a proxy for collecting 100-byte events from hundreds or thousands of low power devices and writing records into an Kinesis stream. These EC2 instances must each write thousands of events per second to your Kinesis stream. To achieve the throughput needed, producers must implement complicated logic such as batching or multithreading, in addition to retry logic and record de-aggregation at the consumer side. The KPL performs all of these tasks for you.
+    
+        Consumer-side Ease of Use
+            For consumer-side developers using the KCL in Java, the KPL integrates without additional effort. When the KCL retrieves an aggregated Kinesis Streams record consisting of multiple KPL user records, it automatically invokes the KPL to extract the individual user records before returning them to the user.
+            For consumer-side developers who do not use the KCL but instead use the API operation GetRecords directly, a KPL Java library is available to extract the individual user records before returning them to the user.
+    
+        Producer Monitoring
+            You can collect, monitor, and analyze your Kinesis Streams producers using Amazon CloudWatch and the KPL. The KPL emits throughput, error, and other metrics to CloudWatch on your behalf, and is configurable to monitor at the stream, shard, or producer level.
+    
+        Asynchronous Architecture
+            Because the KPL may buffer records before sending them to Kinesis Streams, it does not force the caller application to block and wait for a confirmation that the record has arrived at the server before continuing execution.
+            A call to put a record into the KPL always returns immediately and does not wait for the record to be sent or a response to be received from the server. Instead, a Future object is created that receives the result of sending the record to Kinesis Streams at a later time.
+            This is the same behavior as asynchronous clients in the AWS SDK.
+    
+        When Not To Use the KPL?
+            The KPL can incur an additional processing delay of up to RecordMaxBufferedTime within the library (user-configurable). Larger values of RecordMaxBufferedTime results in higher packing efficiencies and better performance. Applications that cannot tolerate this additional delay may need to use the AWS SDK directly.
 
 Stream Consumer
 ---------------
 
-You can have Apache Storm/Spark etc as a Consumer of Kinesis Stream. There is a special Spout available in Apache Storm for consuming records from Kinesis Stream.
-OR
-you can write your own consumer using KCL (Kinesis Consumer Library).
-
-There are many low-level consumer apis available like GetRecords, but KCL abstracts this low-level api and provides you many other advantages.
-http://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetRecords.html
-
-You can use the Kinesis Client Library (KCL) to simplify parallel processing of the stream by a fleet of workers running on a fleet of EC2 instances.
-The KCL simplifies writing code to read from the shards in the stream and ensures that there is a worker allocated to every shard in the stream. The KCL also provides help with fault tolerance by providing checkpointing capabilities.
+    You can have Apache Storm/Spark etc as a Consumer of Kinesis Stream. There is a special Spout available in Apache Storm for consuming records from Kinesis Stream.
+    OR
+    you can write your own consumer using KCL (Kinesis Consumer Library).
+    
+    There are many low-level consumer apis available like GetRecords, but KCL abstracts this low-level api and provides you many other advantages.
+    http://docs.aws.amazon.com/kinesis/latest/APIReference/API_GetRecords.html
+    
+    You can use the Kinesis Client Library (KCL) to simplify parallel processing of the stream by a fleet of workers running on a fleet of EC2 instances.
+    The KCL simplifies writing code to read from the shards in the stream and ensures that there is a worker allocated to every shard in the stream. The KCL also provides help with fault tolerance by providing checkpointing capabilities.
 
     KCL (Kinesis Consumer Library)
     ------------------------------
@@ -205,7 +205,7 @@ The KCL simplifies writing code to read from the shards in the stream and ensure
             - (IMP) Checkpoints processed records
             - Balances shard associations when the worker instance count changes
             - Balances shard associations when shards are split or merged
-    
+        
         IRecordProcessor Methods
     
     
@@ -243,6 +243,9 @@ The KCL simplifies writing code to read from the shards in the stream and ensure
         Worker and RecordProcessor on Consumer side
     
             you can deploy your KCL application on multiple EC2 instances. Each EC2 instance runs one worker. Every worker runs number of record processors (1 record processor per shard). Workers continuously keep polling to know number of shards and accordingly increases or decreases number of record processors.
+            
+            https://aws.amazon.com/kinesis/streams/faqs/
+            (IMP) All workers associated with the same application name are assumed to be working together on the same Amazon Kinesis stream. If you run an additional instance of the same application code, but with a different application name, KCL treats the second instance as an entirely separate application also operating on the same stream.                 
     
 
 Important Concepts
@@ -537,6 +540,36 @@ Important Concepts
 
             When resharding increases the number of shards in the stream, the corresponding increase in the number of record processors increases the load on the EC2 instances that are hosting them. If the instances are part of an Auto Scaling group, and the load increases sufficiently, the Auto Scaling group adds more instances to handle the increased load. You should configure your instances to launch your Amazon Kinesis Streams application at startup, so that additional workers and record processors become active on the new instance right away.
 
+    Tracking Amazon Kinesis Streams Application State
+    -------------------------------------------------
+        http://docs.aws.amazon.com/streams/latest/dev/kinesis-record-processor-ddb.html
+        
+        For each Amazon Kinesis Streams application, the KCL uses a unique Amazon DynamoDB table to keep track of the application's state. Because the KCL uses the name of the Amazon Kinesis Streams application to create the name of the table, each application name must be unique.
+        
+        Application State Data
+        
+        Each row in the DynamoDB table represents a shard that is being processed by your application. The hash key for the table is the shard ID.
+        
+        In addition to the shard ID, each row also includes the following data:
+        
+           - checkpoint: The most recent checkpoint sequence number for the shard. This value is unique across all shards in the stream.
+           - checkpointSubSequenceNumber: When using the Kinesis Producer Library's aggregation feature, this is an extension to checkpoint that tracks individual user records within the Kinesis record.
+           - leaseCounter: Used for lease versioning so that workers can detect that their lease has been taken by another worker.
+           - leaseKey: A unique identifier for a lease. Each lease is particular to a shard in the stream and is held by one worker at a time.
+           - leaseOwner: The worker that is holding this lease.
+           - ownerSwitchesSinceCheckpoint: How many times this lease has changed workers since the last time a checkpoint was written.
+           - parentShardId: Used to ensure that the parent shard is fully processed before processing starts on the child shards. This ensures that records are processed in the same order they were put into the stream.
+
+    Low-Latency Processing
+    ----------------------
+        http://docs.aws.amazon.com/streams/latest/dev/kinesis-low-latency.html
+        
+        Propagation delay is defined as the end-to-end latency from the moment a record is written to the stream until it is read by a consumer application. This delay varies depending upon a number of factors, but it is primarily affected by the polling interval of consumer applications.
+                
+    Using AWS Lambda with the Kinesis Producer Lirary
+    -------------------------------------------------
+        http://docs.aws.amazon.com/streams/latest/dev/kinesis-record-deaggregation.html                
+    
     Changing the Data Retention Period
     ----------------------------------
         http://docs.aws.amazon.com/streams/latest/dev/kinesis-extended-retention.html
