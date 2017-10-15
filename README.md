@@ -201,6 +201,8 @@ There are many ways to put records in Kinesis Stream
 
         Example:
         http://docs.aws.amazon.com/streams/latest/dev/kinesis-kpl-writing.html
+        It is a Asynchronous operation. It collects records in BlockingQueue and when it is full as per the configured buffer size/record size, using PutRecords (bulk api), they will be put to stream.
+        Using Future objects, you can detect success/failure of the records. 
         
 Stream Consumer
 ---------------
