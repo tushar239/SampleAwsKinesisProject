@@ -199,6 +199,9 @@ There are many ways to put records in Kinesis Stream
         When Not To Use the KPL?
             The KPL can incur an additional processing delay of up to RecordMaxBufferedTime within the library (user-configurable). Larger values of RecordMaxBufferedTime results in higher packing efficiencies and better performance. Applications that cannot tolerate this additional delay may need to use the AWS SDK directly.
 
+        Example:
+        http://docs.aws.amazon.com/streams/latest/dev/kinesis-kpl-writing.html
+        
 Stream Consumer
 ---------------
 
@@ -376,7 +379,7 @@ Important Concepts
                 ...    |
             record ZZ--|
 
-        Configuring the KPL
+        Configuring the KPL (Kinesis Producer Library)
 
             http://docs.aws.amazon.com/streams/latest/dev/kinesis-kpl-config.html
 
