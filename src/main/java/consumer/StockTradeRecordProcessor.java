@@ -83,13 +83,19 @@ public class StockTradeRecordProcessor implements IRecordProcessor {
     }
 
     private void processRecord(Record record) {
-        byte[] data = record.getData().array();
-        StockTrade trade = StockTrade.fromJsonAsBytes(data);
-        if (trade == null) {
-            LOG.warn("Skipping record. Unable to parse record into StockTrade. Partition Key: " + record.getPartitionKey());
-            return;
+        try {
+            byte[] data = record.getData().array();
+            StockTrade trade = StockTrade.fromJsonAsBytes(data);
+            if (trade == null) {
+                LOG.warn("Skipping record. Unable to parse record into StockTrade. Partition Key: " + record.getPartitionKey());
+                return;
+            }
+            stockStats.addStockTrade(trade);
+        } catch (Exception e) {
+            System.out.println(e);
+            // VERY IMP: Do something with records for which processing is failed.
+            // Read README file's 'Some Kinesis Streams Records are Skipped When Using the Kinesis Client Library' section.
         }
-        stockStats.addStockTrade(trade);
     }
 
     /**
@@ -98,12 +104,14 @@ public class StockTradeRecordProcessor implements IRecordProcessor {
     @Override
     public void shutdown(IRecordProcessorCheckpointer checkpointer, ShutdownReason reason) {
         LOG.info("Shutting down record processor for shard: " + kinesisShardId);
-        // Important to checkpoint after reaching end of shard, so we can start processing data from child shards.
+        // VERY IMP: Important to checkpoint after reaching end of shard, so we can start processing data from child shards.
+        // Read README file's IRecordProcessor's shutDown method notes.
         if (reason == ShutdownReason.TERMINATE) {
             checkpoint(checkpointer);
         }
     }
 
+    // IMP: checkpoints are stored in DynamoDB. A table with same name as Stream name will be created in DynamodDB to store the statuses.
     private void checkpoint(IRecordProcessorCheckpointer checkpointer) {
         LOG.info("Checkpointing shard " + kinesisShardId);
         try {

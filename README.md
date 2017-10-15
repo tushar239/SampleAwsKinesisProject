@@ -570,7 +570,16 @@ Important Concepts
             In an Amazon Kinesis Streams application, if a record processor is processing data faster than the limit — such as in the case of a failover — throttling occurs. Because the Kinesis Client Library manages the interactions between the application and Kinesis Streams, throttling exceptions occur in the KCL code rather than in the application code. However, because the KCL logs these exceptions, you see them in the logs.
             
             If you find that your application is throttled consistently, you should consider increasing the number of shards for the stream.    
-            
+
+    Some Kinesis Streams Records are Skipped When Using the Kinesis Client Library
+    ------------------------------------------------------------------------------
+
+    The most common cause of skipped records is an unhandled exception thrown from processRecords. 
+    The Kinesis Client Library (KCL) relies on your processRecords code to handle any exceptions that arise from processing the data records. 
+    Any exception thrown from processRecords is absorbed by the KCL. To avoid infinite retries on a recurring failure, the KCL does not resend the batch of records processed at the time of the exception. 
+    The KCL then calls processRecords for the next batch of data records without restarting the record processor. 
+    This effectively results in consumer applications observing skipped records. To prevent skipped records, handle all exceptions within processRecords appropriately.
+                
     Tracking Amazon Kinesis Streams Application State
     -------------------------------------------------
         http://docs.aws.amazon.com/streams/latest/dev/kinesis-record-processor-ddb.html
