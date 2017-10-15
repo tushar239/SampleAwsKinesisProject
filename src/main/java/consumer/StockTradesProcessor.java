@@ -4,6 +4,7 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessorFactory;
+import com.amazonaws.services.kinesis.clientlibrary.lib.worker.InitialPositionInStream;
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.KinesisClientLibConfiguration;
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.Worker;
 import org.apache.commons.logging.Log;
@@ -108,9 +109,11 @@ public class StockTradesProcessor {
         KinesisClientLibConfiguration kclConfig =
                 new KinesisClientLibConfiguration(applicationName, streamName, credentialsProvider, workerId)
                         .withRegionName(region.getName())
-                        .withCommonClientConfig(ConfigurationUtils.getClientConfigWithUserAgent());
+                        .withCommonClientConfig(ConfigurationUtils.getClientConfigWithUserAgent())
+                        // Used to specify the position in the stream where a new application should start from.
+                        // This is used during initial application bootstrap (when a checkpoint doesn't exist for a shard or its parents).
                         // read README.md' "Handling Startup, Shutdown and Throttling" section to understand why TRIM_HORIZON should be set as startint position to read the records from the stream.
-                        //.withInitialPositionInStream(InitialPositionInStream.TRIM_HORIZON);
+                        .withInitialPositionInStream(InitialPositionInStream.TRIM_HORIZON);
 
         IRecordProcessorFactory recordProcessorFactory = new StockTradeRecordProcessorFactory();
 

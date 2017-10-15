@@ -19,6 +19,7 @@ public class StockTradeRecordProcessorFactory implements IRecordProcessorFactory
      */
     @Override
     public IRecordProcessor createProcessor() {
-        return new StockTradeRecordProcessor();
+        StockTradeRecordProcessor stockTradeRecordProcessor = new StockTradeRecordProcessor();
+        return stockTradeRecordProcessor;
     }
 }

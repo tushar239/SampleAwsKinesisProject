@@ -21,7 +21,8 @@ public class StockTradeRecordProcessor implements IRecordProcessor {
     private String kinesisShardId;
 
     // Reporting interval
-    private static final long REPORTING_INTERVAL_MILLIS = 60000L; // 1 minute
+    //private static final long REPORTING_INTERVAL_MILLIS = 60000L; // 1 minute
+    private static final long REPORTING_INTERVAL_MILLIS = 1000L; // 1 minute
     private long nextReportingTimeInMillis;
 
     // Checkpointing interval
@@ -52,7 +53,9 @@ public class StockTradeRecordProcessor implements IRecordProcessor {
         for (Record record : records) {
             // process record
             processRecord(record);
+            System.out.println("processing..." + record.toString());
         }
+
 
         // If it is time to report stats as per the reporting interval, report stats
         if (System.currentTimeMillis() > nextReportingTimeInMillis) {
