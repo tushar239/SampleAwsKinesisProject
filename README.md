@@ -265,6 +265,11 @@ Stream Consumer
                  Processing ends when the record processor does not receive any further records from the shard, because either the shard was split or merged, or the stream was deleted.
     
                  The KCL also passes a IRecordProcessorCheckpointer interface to shutdown. If the shutdown reason is TERMINATE, the record processor should finish processing any data records, and then call the checkpoint method on this interface.
+                 
+                 The shutdown method can be called when any of the situations occur:
+                    a. record processor will not receive any further records from the shard.
+                    b. worker appears to be unresponsive to the Amazon Kinesis Client Library.
+                    c. Amazon Kinesis Client Library calls the shutdown method with a parameter TERMINATE.                 
     
         Worker and RecordProcessor on Consumer side
     
