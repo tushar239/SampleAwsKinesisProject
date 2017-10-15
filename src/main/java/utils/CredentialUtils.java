@@ -10,12 +10,15 @@ import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 public class CredentialUtils {
     public static AWSCredentialsProvider getCredentialsProvider() throws Exception {
         /*
-         * The ProfileCredentialsProvider will return your [default] credential profile by
-         * reading from the credentials file located at (~/.aws/credentials).
+         The ProfileCredentialsProvider will return your [Tushar Chokshi] credential profile by reading from the credentials file located at (~/.aws/credentials).
+         It has
+         [Tushar Chokshi]
+         aws_access_key_id=<.....>
+         aws_secret_access_key=<.....>
          */
         AWSCredentialsProvider credentialsProvider = null;
         try {
-            credentialsProvider = new ProfileCredentialsProvider("default");
+            credentialsProvider = new ProfileCredentialsProvider("Tushar Chokshi");
         } catch (Exception e) {
             throw new AmazonClientException(
                     "Cannot load the credentials from the credential profiles file. " +

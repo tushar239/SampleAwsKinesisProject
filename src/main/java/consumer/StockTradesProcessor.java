@@ -24,6 +24,38 @@ import java.util.logging.Logger;
  * IMP:
  * It is possible that consumer can read same record multiple times (read README.md's 'Handling Duplicate Records' section).
  * It's upto the consumer how to handle duplicate records.
+ *
+ * O/P of this program will look something like this:
+ *
+     ****** Shard shardId-000000000002 stats for last 1 minute ******
+     Most popular stock being bought: JPM, 21 buys.
+     Most popular stock being sold: GE, 11 sells.
+     ****************************************************************
+
+     ****** Shard shardId-000000000001 stats for last 1 minute ******
+     Most popular stock being bought: XOM, 16 buys.
+     Most popular stock being sold: CHL, 10 sells.
+     ****************************************************************
+
+     ****** Shard shardId-000000000000 stats for last 1 minute ******
+     Most popular stock being bought: FB, 16 buys.
+     Most popular stock being sold: AMZN, 7 sells.
+     ****************************************************************
+
+     ****** Shard shardId-000000000002 stats for last 1 minute ******
+     Most popular stock being bought: GE, 14 buys.
+     Most popular stock being sold: T, 7 sells.
+     ****************************************************************
+
+     ****** Shard shardId-000000000001 stats for last 1 minute ******
+     Most popular stock being bought: RDS.A, 17 buys.
+     Most popular stock being sold: VZ, 11 sells.
+     ****************************************************************
+
+     ****** Shard shardId-000000000000 stats for last 1 minute ******
+     Most popular stock being bought: WFC, 18 buys.
+     Most popular stock being sold: WFC, 12 sells.
+     ****************************************************************
  */
 public class StockTradesProcessor {
     private static final Log LOG = LogFactory.getLog(StockTradesProcessor.class);

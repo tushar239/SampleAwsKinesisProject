@@ -1,7 +1,6 @@
 package producer;
 
 import com.amazonaws.AmazonClientException;
-import com.amazonaws.auth.AWSCredentialsProviderChain;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
 import com.amazonaws.services.kinesis.AmazonKinesis;
@@ -19,6 +18,23 @@ import java.nio.ByteBuffer;
 
 /**
  * Continuously sends simulated stock trades to Kinesis
+ *
+ * You need to create a Stream before you experiment a producer/consumer.
+ * Read CreateAStream.docx
+ *
+ * O/P of this program will look something like below.
+ INFO: Putting trade: ID 1006: BUY 6293 shares of XOM for $86.41
+ Oct 14, 2017 11:34:30 PM producer.StockTradesWriter sendStockTrade
+ INFO: Putting trade: ID 1007: BUY 9557 shares of GE for $26.94
+ Oct 14, 2017 11:34:30 PM producer.StockTradesWriter sendStockTrade
+ INFO: Putting trade: ID 1008: BUY 2528 shares of CVX for $122.42
+ Oct 14, 2017 11:34:31 PM producer.StockTradesWriter sendStockTrade
+ INFO: Putting trade: ID 1009: SELL 3811 shares of JNJ for $104.25
+ Oct 14, 2017 11:34:31 PM producer.StockTradesWriter sendStockTrade
+ INFO: Putting trade: ID 1010: SELL 3127 shares of FB for $80.72
+ Oct 14, 2017 11:34:31 PM producer.StockTradesWriter sendStockTrade
+ INFO: Putting trade: ID 1011: BUY 6626 shares of MSFT for $35.70
+
  */
 public class StockTradesWriter {
 
@@ -113,11 +129,11 @@ public class StockTradesWriter {
             System.exit(1);
         }
 
-        AmazonKinesisClientBuilder amazonKinesisClientBuilder = AmazonKinesisClientBuilder.standard();
-        amazonKinesisClientBuilder.setCredentials(new AWSCredentialsProviderChain(CredentialUtils.getCredentialsProvider()));
-        amazonKinesisClientBuilder.setClientConfiguration(ConfigurationUtils.getClientConfigWithUserAgent());
-        amazonKinesisClientBuilder.setRegion(region.getName());
-        AmazonKinesis kinesisClient = amazonKinesisClientBuilder.build();
+        AmazonKinesis kinesisClient = AmazonKinesisClientBuilder.standard()
+                .withCredentials(CredentialUtils.getCredentialsProvider())
+                .withClientConfiguration(ConfigurationUtils.getClientConfigWithUserAgent())
+                .withRegion(region.getName())
+                .build();
 
         // Validate that the stream exists and is active
         validateStream(kinesisClient, streamName);
