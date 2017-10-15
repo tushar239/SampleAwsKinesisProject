@@ -7,14 +7,14 @@ import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessor;
 import com.amazonaws.services.kinesis.clientlibrary.interfaces.IRecordProcessorCheckpointer;
 import com.amazonaws.services.kinesis.clientlibrary.lib.worker.ShutdownReason;
 import com.amazonaws.services.kinesis.model.Record;
+import model.StockTrade;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import java.util.List;
 
 /**
- Processes records retrieved from stock trades stream.
-
+ * Processes records retrieved from stock trades stream.
  */
 public class StockTradeRecordProcessor implements IRecordProcessor {
     private static final Log LOG = LogFactory.getLog(StockTradeRecordProcessor.class);
@@ -42,9 +42,11 @@ public class StockTradeRecordProcessor implements IRecordProcessor {
         nextCheckpointTimeInMillis = System.currentTimeMillis() + CHECKPOINT_INTERVAL_MILLIS;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /*
+        Process data records.
+        The Amazon Kinesis Client Library will invoke this method to deliver data records to the application.
+        Upon fail over, the new instance will get records with sequence number > checkpoint position for each partition key.
+    */
     @Override
     public void processRecords(List<Record> records, IRecordProcessorCheckpointer checkpointer) {
         for (Record record : records) {
@@ -67,15 +69,24 @@ public class StockTradeRecordProcessor implements IRecordProcessor {
     }
 
     private void reportStats() {
-        // TODO: Implement method
+        System.out.println("****** Shard " + kinesisShardId + " stats for last 1 minute ******\n" +
+                stockStats + "\n" +
+                "****************************************************************\n");
+
     }
 
     private void resetStats() {
-        // TODO: Implement method
+        stockStats = new StockStats();
     }
 
     private void processRecord(Record record) {
-        // TODO: Implement method
+        byte[] data = record.getData().array();
+        StockTrade trade = StockTrade.fromJsonAsBytes(data);
+        if (trade == null) {
+            LOG.warn("Skipping record. Unable to parse record into StockTrade. Partition Key: " + record.getPartitionKey());
+            return;
+        }
+        stockStats.addStockTrade(trade);
     }
 
     /**

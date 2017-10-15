@@ -1,7 +1,6 @@
 package producer;
 
 import com.amazonaws.AmazonClientException;
-import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProviderChain;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.RegionUtils;
@@ -25,13 +24,13 @@ public class StockTradesWriter {
 
     private static final Log LOG = LogFactory.getLog(StockTradesWriter.class);
 
-    private static void checkUsage(String[] args) {
+    /*private static void checkUsage(String[] args) {
         if (args.length != 2) {
             System.err.println("Usage: " + StockTradesWriter.class.getSimpleName()
                     + " <stream name> <region>");
             System.exit(1);
         }
-    }
+    }*/
 
     /**
      * Checks if the stream exists and is active
@@ -64,9 +63,20 @@ public class StockTradesWriter {
      * @param kinesisClient Amazon Kinesis client
      * @param streamName    Name of stream
      */
-    private static void sendStockTrade(StockTrade trade, AmazonKinesis kinesisClient,
-                                       String streamName) {
+    private static void sendStockTrade(StockTrade trade, AmazonKinesis kinesisClient, String streamName) {
+        // The PutRecord API expects a byte array, and you need to convert trade to JSON format. This single line of code performs that operation:
         byte[] bytes = trade.toJsonAsBytes();
+
+        /*
+            StockTrade Record
+            {
+              "tickerSymbol": "AMZN",
+              "tradeType": "BUY",
+              "price": 395.87,
+              "quantity": 16,
+              "id": 3567129045
+            }
+         */
         // The bytes could be null if there is an issue with the JSON serialization by the Jackson JSON library.
         if (bytes == null) {
             LOG.warn("Could not get JSON bytes for stock trade");
@@ -77,7 +87,9 @@ public class StockTradesWriter {
         LOG.info("Putting trade: " + trade.toString());
         PutRecordRequest putRecordsRequest = new PutRecordRequest();
         putRecordsRequest.setStreamName(streamName);
-        // We use the ticker symbol as the partition key, explained in the Supplemental Information section below.
+        // We use the ticker symbol as the partition key.
+        // The example uses a stock ticket as a partition key, which maps the record to a specific shard. In practice, you should have hundreds or thousands of partition keys per shard such that records are evenly dispersed across your stream.
+        // If you want, you can configure a consumer to read data from a specific shard using partition key.
         putRecordsRequest.setPartitionKey(trade.getTickerSymbol());
         putRecordsRequest.setData(ByteBuffer.wrap(bytes));
 
@@ -94,13 +106,12 @@ public class StockTradesWriter {
 
         String streamName = "MyKinesisStream";
         String regionName = "us-west-2";
+
         Region region = RegionUtils.getRegion(regionName);
         if (region == null) {
             System.err.println(regionName + " is not a valid AWS region.");
             System.exit(1);
         }
-
-        AWSCredentials credentials = CredentialUtils.getCredentialsProvider().getCredentials();
 
         AmazonKinesisClientBuilder amazonKinesisClientBuilder = AmazonKinesisClientBuilder.standard();
         amazonKinesisClientBuilder.setCredentials(new AWSCredentialsProviderChain(CredentialUtils.getCredentialsProvider()));

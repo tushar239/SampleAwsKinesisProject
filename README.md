@@ -398,6 +398,105 @@ Important Concepts
         all subrecords within an aggregated record have the same sequence number, so additional data has to be stored with the checkpoint if you need to distinguish between subrecords.
         This additional data is referred to as the subsequence number.
 
+    Consuming Empty Records
+    -----------------------
+        https://aws.amazon.com/kinesis/streams/faqs/
+        One possible reason is that there is no record at the position specified by the current shard iterator. This could happen even if you are using TRIM_HORIZON as shard iterator type. An Amazon Kinesis stream represents a continuous stream of data. You should call GetRecords operation in a loop and the record will be returned when the shard iterator advances to the position where the record is stored.
+        
+    Handling Duplicate Records
+    --------------------------
+        http://docs.aws.amazon.com/streams/latest/dev/kinesis-record-processor-duplicates.html
+
+        There are two primary reasons why records may be delivered more than one time to your Amazon Kinesis Streams application: producer retries and consumer retries. Your application must anticipate and appropriately handle processing individual records multiple times.
+        
+        Producer Retries
+        
+            Consider a producer that experiences a network-related timeout after it makes a call to PutRecord, but before it can receive an acknowledgement from Amazon Kinesis Streams. 
+            The producer cannot be sure if the record was delivered to Kinesis Streams. 
+            Assuming that every record is important to the application, the producer would have been written to retry the call with the same data. 
+            If both PutRecord calls on that same data were successfully committed to Kinesis Streams, then there will be two Kinesis Streams records. 
+            Although the two records have identical data, they also have unique sequence numbers. 
+            Applications that need strict guarantees should embed a primary key within the record to remove duplicates later when processing. 
+            
+            Note that the number of duplicates due to producer retries is usually low compared to the number of duplicates due to consumer retries.
+        
+        Consumer Retries
+        
+            Consumer (data processing application) retries happen when record processors restart. Record processors for the same shard restart in the following cases:
+        
+                - A worker terminates unexpectedly
+                - Worker instances are added or removed
+                - Shards are merged or split
+                - The application is deployed
+        
+        In all these cases, the shards-to-worker-to-record-processor mapping is continuously updated to load balance processing. 
+        Shard processors that were migrated to other instances restart processing records from the last checkpoint. 
+        This results in duplicated record processing as shown in the example below. 
+        For more information about load-balancing, see Resharding, Scaling, and Parallel Processing.
+        
+        Example: 
+        
+            Consumer Retries Resulting in Redelivered Records
+            
+            In this example, you have an application that continuously reads records from a stream, aggregates records into a local file, and uploads the file to Amazon S3. For simplicity, assume there is only 1 shard and 1 worker processing the shard. Consider the following example sequence of events, assuming that the last checkpoint was at record number 10000:
+            
+                1. A worker reads the next batch of records from the shard, records 10001 to 20000.
+                2. The worker then passes the batch of records to the associated record processor.
+                3. The record processor aggregates the data, creates an Amazon S3 file, and uploads the file to Amazon S3 successfully.
+                4. Worker terminates unexpectedly before a new checkpoint can occur.
+                5. Application, worker, and record processor restart.
+                6. Worker now begins reading from the last successful checkpoint, in this case 10001.
+            
+            Thus, records 10001-20000 are consumed more than one time.
+        
+        Being Resilient to Consumer Retries
+        
+            Even though records may be processed more than one time, your application may want to present the side effects as if records were processed only one time (idempotent processing). 
+            Solutions to this problem vary in complexity and accuracy. If the destination of the final data can handle duplicates well, we recommend relying on the final destination to achieve idempotent processing. 
+            For example, with Elasticsearch you can use a combination of versioning and unique IDs to prevent duplicated processing.
+        
+            In the example application in the previous section, it continuously reads records from a stream, aggregates records into a local file, and uploads the file to Amazon S3. As illustrated, records 10001 -20000 are consumed more than one time resulting in multiple Amazon S3 files with the same data. One way to mitigate duplicates from this example is to ensure that step 3 uses the following scheme:
+            
+                1. Record Processor uses a fixed number of records per Amazon S3 file, such as 5000.                
+                2. The file name uses this schema: Amazon S3 prefix, shard-id, and First-Sequence-Num. In this case, it could be something like sample-shard000001-10001.               
+                3. After you upload the Amazon S3 file, checkpoint by specifying Last-Sequence-Num. In this case, you would checkpoint at record number 15000.
+            
+            With this scheme, even if records are processed more than one time, the resulting Amazon S3 file has the same name and has the same data. The retries only result in writing the same data to the same file more than one time.
+            
+            In the case of a reshard operation, 
+            the number of records left in the shard may be less than your desired fixed number needed. In this case, your shutdown() method has to flush the file to Amazon S3 and checkpoint on the last sequence number. The above scheme is compatible with reshard operations as well.
+
+    Handling Startup, Shutdown and Throttling
+    -----------------------------------------
+        http://docs.aws.amazon.com/streams/latest/dev/kinesis-record-processor-additional-considerations.html
+        
+        Starting Up Data Producers and Data Consumers
+        
+            By default, the KCL begins reading records from the tip of the stream;, which is the most recently added record. In this configuration, if a data-producing application adds records to the stream before any receiving record processors are running, the records are not read by the record processors after they start up.
+            
+            To change the behavior of the record processors so that it always reads data from the beginning of the stream, set the following value in the properties file for your Amazon Kinesis Streams application:
+                    
+            initialPositionInStream = TRIM_HORIZON
+            Amazon Kinesis Streams keeps records for 24 to 168 hours. This time frame is called the retention period. Setting the starting position to the TRIM_HORIZON will start the record processor with the oldest data in the stream, as defined by the retention period. Even with the TRIM_HORIZON setting, if a record processor were to start after a greater time has passed than the retention period, then some of the records in the stream will no longer be available. For this reason, you should always have consumer applications reading from the stream and use the CloudWatch metric GetRecords.IteratorAgeMilliseconds to monitor that applications are keeping up with incoming data.
+            
+            In some scenarios, it may be fine for record processors to miss the first few records in the stream. For example, you might run some initial records through the stream to test that the stream is working end-to-end as expected. After doing this initial verification, you would then start your workers and begin to put production data into the stream.
+            
+            For more information about the TRIM_HORIZON setting, see Using Shard Iterators.
+        
+        Shutting Down an Amazon Kinesis Streams Application
+        
+            When your Amazon Kinesis Streams application has completed its intended task, you should shut it down by terminating the EC2 instances on which it is running. You can terminate the instances using the AWS Management Console or the AWS CLI.
+            
+            After shutting down your Amazon Kinesis Streams application, you should delete the Amazon DynamoDB table that the KCL used to track the application's state.
+        
+        Read Throttling
+        
+            The throughput of a stream is provisioned at the shard level. Each shard has a read throughput of up to 5 transactions per second for reads, up to a maximum total data read rate of 2 MB per second. If an application (or a group of applications operating on the same stream) attempts to get data from a shard at a faster rate, Kinesis Streams throttles the corresponding Get operations.
+            
+            In an Amazon Kinesis Streams application, if a record processor is processing data faster than the limit — such as in the case of a failover — throttling occurs. Because the Kinesis Client Library manages the interactions between the application and Kinesis Streams, throttling exceptions occur in the KCL code rather than in the application code. However, because the KCL logs these exceptions, you see them in the logs.
+            
+            If you find that your application is throttled consistently, you should consider increasing the number of shards for the stream.    
+            
     Resharding, Scaling, and Parallel Processing
     --------------------------------------------
         Items don't move between shards. After re-sharding, new records are put into new shards, but old records are never transferred from the parent shard, and no more new records are added to the (now closed) parent shard. Data persists in the parent shard for its normal 24 hour lifespan even after it is closed. Your record processor would only be shutdown after it has reached the end of the data from the parent shard.

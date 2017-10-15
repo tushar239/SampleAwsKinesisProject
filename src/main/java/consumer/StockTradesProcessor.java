@@ -21,6 +21,9 @@ import java.util.logging.Logger;
  * record processor instances to read and process records from each shard. KCL also
  * load balances shards across all the instances of this processor.
  *
+ * IMP:
+ * It is possible that consumer can read same record multiple times (read README.md's 'Handling Duplicate Records' section).
+ * It's upto the consumer how to handle duplicate records.
  */
 public class StockTradesProcessor {
     private static final Log LOG = LogFactory.getLog(StockTradesProcessor.class);
@@ -29,6 +32,7 @@ public class StockTradesProcessor {
     private static final Logger PROCESSOR_LOGGER =
             Logger.getLogger("com.amazonaws.services.kinesis.samples.stocktrades.processor");
 
+/*
     private static void checkUsage(String[] args) {
         if (args.length != 3) {
             System.err.println("Usage: " + StockTradesProcessor.class.getSimpleName()
@@ -36,12 +40,12 @@ public class StockTradesProcessor {
             System.exit(1);
         }
     }
+*/
 
     /**
      * Sets the global log level to WARNING and the log level for this package to INFO,
      * so that we only see INFO messages for this processor. This is just for the purpose
      * of this tutorial, and should not be considered as best practice.
-     *
      */
     private static void setLogLevels() {
         ROOT_LOGGER.setLevel(Level.WARNING);
@@ -49,13 +53,15 @@ public class StockTradesProcessor {
     }
 
     public static void main(String[] args) throws Exception {
-        checkUsage(args);
+        //checkUsage(args);
 
-        String applicationName = args[0];
-        String streamName = args[1];
-        Region region = RegionUtils.getRegion(args[2]);
+        String applicationName = "MyKinesisStreamConsumer";
+        String streamName = "MyKinesisStream";
+        String regionName = "us-west-2";
+
+        Region region = RegionUtils.getRegion(regionName);
         if (region == null) {
-            System.err.println(args[2] + " is not a valid AWS region.");
+            System.err.println(regionName + " is not a valid AWS region.");
             System.exit(1);
         }
 
@@ -68,6 +74,8 @@ public class StockTradesProcessor {
                 new KinesisClientLibConfiguration(applicationName, streamName, credentialsProvider, workerId)
                         .withRegionName(region.getName())
                         .withCommonClientConfig(ConfigurationUtils.getClientConfigWithUserAgent());
+                        // read README.md' "Handling Startup, Shutdown and Throttling" section to understand why TRIM_HORIZON should be set as startint position to read the records from the stream.
+                        //.withInitialPositionInStream(InitialPositionInStream.TRIM_HORIZON);
 
         IRecordProcessorFactory recordProcessorFactory = new StockTradeRecordProcessorFactory();
 
