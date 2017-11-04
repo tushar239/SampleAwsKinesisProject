@@ -100,7 +100,8 @@ public class StockTradesWriter {
         }
 
         // There are 3 different ways of putting records in stream.
-        // Here, we are using PutRecord API. PutRecords is for putting records in stream in bulk. KPL (Kinesis Producer Library) is better because it takes care of buffering records before putting them.
+        // Here, we are using PutRecord API. PutRecords is for putting records in stream in bulk.
+        // KPL (Kinesis Producer Library) is better because it takes care of buffering records before putting them.
         // Read README file's 'There are many ways to put records in Kinesis Stream' section.
 
         // Putting records in a Stream one by one

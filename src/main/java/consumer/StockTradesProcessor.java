@@ -26,6 +26,12 @@ import java.util.logging.Logger;
  * It is possible that consumer can read same record multiple times (read README.md's 'Handling Duplicate Records' section).
  * It's upto the consumer how to handle duplicate records.
  *
+ * Consumer has one Worker. This worker created RecordProcessors. One RecordProcessor for each shard.
+ * As number of shards are increased or decreased, number of RecordProcessors are also adjusted accordingly.
+ *
+ * On any exception during processing the record, will not make KCL to resubmit the record. You need to handle any expected exception in the code appropriately.
+ * KCL will absorb any exception thrown from processRecords().
+ *
  * O/P of this program will look something like this:
  *
      ****** Shard shardId-000000000002 stats for last 1 minute ******
@@ -113,11 +119,13 @@ public class StockTradesProcessor {
                         // Used to specify the position in the stream where a new application should start from.
                         // This is used during initial application bootstrap (when a checkpoint doesn't exist for a shard or its parents).
                         // read README.md' "Handling Startup, Shutdown and Throttling" section to understand why TRIM_HORIZON should be set as startint position to read the records from the stream.
+                        // If this consumer goes down and comes back up, it will start reading the records from its checkpoint.
                         .withInitialPositionInStream(InitialPositionInStream.TRIM_HORIZON);
 
         IRecordProcessorFactory recordProcessorFactory = new StockTradeRecordProcessorFactory();
 
         // Create the KCL worker with the stock trade record processor factory
+        // For each shard, it will create a separate RecordProcessor
         Worker worker = new Worker(recordProcessorFactory, kclConfig);
 
         int exitCode = 0;

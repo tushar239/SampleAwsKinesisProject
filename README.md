@@ -173,7 +173,8 @@ There are many ways to put records in Kinesis Stream
         http://docs.aws.amazon.com/streams/latest/dev/developing-producers-with-kpl.html
     
         Note that the KPL is different from the Kinesis Streams API that is available in the AWS SDKs. The Kinesis Streams API helps you manage many aspects of Kinesis Streams (including creating streams, resharding, and putting and getting records), while the KPL provides a layer of abstraction specifically for ingesting data.
-        The KPL is an easy-to-use, highly configurable library that helps you write to a Kinesis stream. It acts as an intermediary between your producer application code and the Kinesis Streams API actions. The KPL performs the following primary tasks:
+        The KPL is an easy-to-use, highly configurable library that helps you write to a Kinesis stream. 
+        It acts as an intermediary between your producer application code and the Kinesis Streams API actions. The KPL performs the following primary tasks:
     
         - Writes to one or more Kinesis streams with an automatic and configurable retry mechanism
         - Collects records and uses PutRecords to write multiple records to multiple shards per request
@@ -182,14 +183,17 @@ There are many ways to put records in Kinesis Stream
         - Submits Amazon CloudWatch metrics on your behalf to provide visibility into producer performance
     
         Performance Benefits
-            The KPL can help build high-performance producers. Consider a situation where your Amazon EC2 instances serve as a proxy for collecting 100-byte events from hundreds or thousands of low power devices and writing records into an Kinesis stream. These EC2 instances must each write thousands of events per second to your Kinesis stream. To achieve the throughput needed, producers must implement complicated logic such as batching or multithreading, in addition to retry logic and record de-aggregation at the consumer side. The KPL performs all of these tasks for you.
+            The KPL can help build high-performance producers. 
+            Consider a situation where your Amazon EC2 instances serve as a proxy for collecting 100-byte events from hundreds or thousands of low power devices and writing records into an Kinesis stream. 
+            These EC2 instances must each write thousands of events per second to your Kinesis stream. To achieve the throughput needed, producers must implement complicated logic such as batching or multithreading, in addition to retry logic and record de-aggregation at the consumer side. The KPL performs all of these tasks for you.
     
         Consumer-side Ease of Use
             For consumer-side developers using the KCL in Java, the KPL integrates without additional effort. When the KCL retrieves an aggregated Kinesis Streams record consisting of multiple KPL user records, it automatically invokes the KPL to extract the individual user records before returning them to the user.
             For consumer-side developers who do not use the KCL but instead use the API operation GetRecords directly, a KPL Java library is available to extract the individual user records before returning them to the user.
     
         Producer Monitoring
-            You can collect, monitor, and analyze your Kinesis Streams producers using Amazon CloudWatch and the KPL. The KPL emits throughput, error, and other metrics to CloudWatch on your behalf, and is configurable to monitor at the stream, shard, or producer level.
+            You can collect, monitor, and analyze your Kinesis Streams producers using Amazon CloudWatch and the KPL. 
+            The KPL emits throughput, error, and other metrics to CloudWatch on your behalf, and is configurable to monitor at the stream, shard, or producer level.
     
         Asynchronous Architecture
             Because the KPL may buffer records before sending them to Kinesis Streams, it does not force the caller application to block and wait for a confirmation that the record has arrived at the server before continuing execution.
@@ -221,8 +225,11 @@ Stream Consumer
     ------------------------------
          http://docs.aws.amazon.com/streams/latest/dev/developing-consumers-with-kcl.html
          
-         The KCL takes care of many of the complex tasks associated with distributed computing, such as load-balancing across multiple instances, responding to instance failures, checkpointing processed records, and reacting to resharding. The KCL enables you to focus on writing record processing logic.
-         Note that the KCL is different from the Kinesis Streams API that is available in the AWS SDKs. The Kinesis Streams API helps you manage many aspects of Kinesis Streams (including creating streams, resharding, and putting and getting records), while the KCL provides a layer of abstraction specifically for processing data in a consumer role.
+         The KCL takes care of many of the complex tasks associated with distributed computing, such as load-balancing across multiple instances, responding to instance failures, checkpointing processed records, and reacting to resharding. 
+         The KCL enables you to focus on writing record processing logic.
+         
+         Note that the KCL is different from the Kinesis Streams API that is available in the AWS SDKs. 
+         The Kinesis Streams API helps you manage many aspects of Kinesis Streams (including creating streams, resharding, and putting and getting records), while the KCL provides a layer of abstraction specifically for processing data in a consumer role.
     
          http://docs.aws.amazon.com/streams/latest/dev/kinesis-record-processor-implementation-app-java.html
          https://github.com/aws/aws-sdk-java/tree/master/src/samples

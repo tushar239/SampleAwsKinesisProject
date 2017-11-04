@@ -14,7 +14,7 @@ import org.apache.commons.logging.LogFactory;
 import java.util.List;
 
 /**
- * Processes records retrieved from stock trades stream.
+ * Processes records retrieved from stock trades stream's shard.
  */
 public class StockTradeRecordProcessor implements IRecordProcessor {
     private static final Log LOG = LogFactory.getLog(StockTradeRecordProcessor.class);
